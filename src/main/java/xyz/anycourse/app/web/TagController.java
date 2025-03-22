@@ -1,5 +1,6 @@
 package xyz.anycourse.app.web;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import xyz.anycourse.app.domain.dto.PaginatedDTO;
@@ -39,7 +40,7 @@ public class TagController {
     }
 
     @PostMapping("/create")
-    public TagDTO createTag(@RequestBody TagCreationDTO tagCreationDTO) {
+    public TagDTO createTag(@RequestBody @Valid TagCreationDTO tagCreationDTO) {
         return tagService.createTag(tagCreationDTO);
     }
 

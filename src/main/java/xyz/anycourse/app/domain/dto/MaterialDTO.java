@@ -2,12 +2,16 @@ package xyz.anycourse.app.domain.dto;
 
 import xyz.anycourse.app.domain.entity.Material;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class MaterialDTO {
     private String id;
     private String title;
     private String description;
     private String thumbnail;
     private String location;
+    private Set<TagDTO> tags;
 
     public MaterialDTO(Material material) {
         this.id = material.getId();
@@ -15,6 +19,9 @@ public class MaterialDTO {
         this.description = material.getDescription();
         this.thumbnail = material.getThumbnail();
         this.location = material.getLocation();
+        this.tags = material.getTags().stream()
+                .map(TagDTO::new)
+                .collect(Collectors.toSet());
     }
 
     public String getId() {
@@ -55,5 +62,13 @@ public class MaterialDTO {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public Set<TagDTO> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<TagDTO> tags) {
+        this.tags = tags;
     }
 }

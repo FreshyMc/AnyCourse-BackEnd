@@ -1,15 +1,14 @@
 package xyz.anycourse.app.service;
 
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.anycourse.app.domain.UserPrincipal;
-import xyz.anycourse.app.domain.dto.MaterialCreatedDTO;
-import xyz.anycourse.app.domain.dto.MaterialCreationDTO;
-import xyz.anycourse.app.domain.dto.MaterialDTO;
-import xyz.anycourse.app.domain.dto.MaterialTagDTO;
+import xyz.anycourse.app.domain.dto.*;
 import xyz.anycourse.app.domain.entity.Material;
 import xyz.anycourse.app.domain.entity.Shop;
 import xyz.anycourse.app.domain.entity.Tag;
@@ -24,6 +23,7 @@ import xyz.anycourse.app.repository.UserRepository;
 import xyz.anycourse.app.service.contract.MaterialService;
 import xyz.anycourse.app.util.UserUtil;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -109,6 +109,19 @@ public class MaterialServiceImpl implements MaterialService {
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
 
         return new MaterialDTO(material);
+    }
+
+    @Override
+    public PaginatedDTO<MaterialDTO> getAllMaterialsByShop(String shopId, Authentication authentication, Pageable pageable) {
+        UserPrincipal principal = UserUtil.extractUserPrincipalFromAuthentication(authentication);
+
+        Page<Material> materials = materialRepository.findAllByShop_Id(shopId, pageable);
+
+        List<MaterialDTO> content = materials.stream()
+                .map(MaterialDTO::new)
+                .toList();
+
+        return new PaginatedDTO<>(content, materials.getTotalPages(), materials.getTotalElements());
     }
 
     private void checkMaterialOwner(Material material, UserPrincipal principal) {

@@ -1,14 +1,12 @@
 package xyz.anycourse.app.web;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import xyz.anycourse.app.domain.dto.MaterialCreatedDTO;
-import xyz.anycourse.app.domain.dto.MaterialCreationDTO;
-import xyz.anycourse.app.domain.dto.MaterialDTO;
-import xyz.anycourse.app.domain.dto.MaterialUploadSuccessDTO;
+import xyz.anycourse.app.domain.dto.*;
 import xyz.anycourse.app.service.contract.MaterialService;
 
 @RequestMapping("/api/material")
@@ -48,5 +46,17 @@ public class MaterialController {
         Authentication authentication
     ) {
         return materialService.getMaterial(materialId, authentication);
+    }
+
+    @GetMapping("/all")
+    public PaginatedDTO<MaterialDTO> getAllMaterials(
+        @RequestParam(name = "shop_id") String shopId,
+        @RequestParam(name = "page", required = false, defaultValue = "0") Integer page,
+        @RequestParam(name = "size", required = false, defaultValue = "15") Integer size,
+        Authentication authentication
+    ) {
+        PageRequest pageable = PageRequest.of(page, size);
+
+        return materialService.getAllMaterialsByShop(shopId, authentication, pageable);
     }
 }
