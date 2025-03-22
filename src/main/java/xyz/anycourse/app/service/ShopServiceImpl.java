@@ -2,6 +2,7 @@ package xyz.anycourse.app.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -145,7 +146,9 @@ public class ShopServiceImpl implements ShopService {
 
     @Override
     public PaginatedDTO<ShopDTO> getShops(Integer page, Integer size, String name, String owner, String follower) {
-        PageRequest pageable = PageRequest.of(page, size);
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        PageRequest pageable = PageRequest.of(page, size, sort);
+
         Specification<Shop> shopSpecification = ShopSpecification.filterBy(name, owner, follower);
 
         Page<Shop> shops = shopRepository.findAll(shopSpecification, pageable);
