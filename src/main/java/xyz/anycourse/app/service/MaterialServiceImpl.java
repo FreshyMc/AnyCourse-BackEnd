@@ -94,7 +94,7 @@ public class MaterialServiceImpl implements MaterialService {
         if (chunkNumber == totalChunks) {
             String fileExtension = FilenameUtils.getExtension(fileChunk.getOriginalFilename());
 
-            String filePath = fileStorageService.reassembleFile(totalChunks, tempUploadDir, fileExtension, MATERIAL_UPLOAD_FOLDER);
+            String filePath = fileStorageService.reassembleFile(totalChunks, MATERIAL_CHUNKS_UPLOAD_FOLDER + tempUploadDir, fileExtension, MATERIAL_UPLOAD_FOLDER);
 
             material.setLocation(filePath);
             materialRepository.save(material);

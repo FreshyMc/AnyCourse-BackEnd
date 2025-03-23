@@ -85,48 +85,72 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public void uploadChunk(MultipartFile fileChunk, int chunkNumber, String tempDir, String uploadDirectory) {
-        Path storePath = Paths.get(rootLocation.toString() + uploadDirectory);
+        // Resolve the directory path properly
+        Path storePath = Paths.get(rootLocation.toString(), uploadDirectory, tempDir);
 
-        if (!storePath.toFile().exists()) {
-            new File(rootLocation + uploadDirectory).mkdirs();
+        // Ensure the directory exists
+        if (!Files.exists(storePath)) {
+            try {
+                Files.createDirectories(storePath);
+            } catch (IOException e) {
+                throw new StorageException("Failed to create directories: " + storePath);
+            }
         }
 
         if (fileChunk.isEmpty()) {
             throw new StorageException("Failed to store empty material chunk");
         }
 
-        String chunkName = String.valueOf(chunkNumber);
+        // Construct the chunk file path
+        Path chunkFilePath = storePath.resolve(String.valueOf(chunkNumber));
+        File chunkFile = chunkFilePath.toFile();
 
-        File chunkFile = new File(rootLocation + uploadDirectory + tempDir + "/" + chunkName);
+        try {
+            if (!chunkFile.exists() && !chunkFile.createNewFile()) {
+                throw new IOException("Could not create file: " + chunkFilePath);
+            }
+        } catch (IOException e) {
+            throw new StorageException("Failed to create new file at: " + chunkFilePath);
+        }
 
         try (FileOutputStream fos = new FileOutputStream(chunkFile, true)) {
             fos.write(fileChunk.getBytes());
-        } catch (Exception ex) {
-            throw new StorageException("Failed to store chunk");
+        } catch (IOException ex) {
+            throw new StorageException("Failed to store chunk in file: " + chunkFilePath);
         }
     }
 
     @Override
     public String reassembleFile(int totalChunks, String tempUploadDir, String fileExtension, String materialUploadFolder) {
-        Path storePath = Paths.get(rootLocation.toString() + materialUploadFolder);
+        // Ensure the main storage directory exists
+        Path storePath = Paths.get(rootLocation.toString(), materialUploadFolder);
 
-        if (!storePath.toFile().exists()) {
-            new File(rootLocation + materialUploadFolder).mkdirs();
+        try {
+            Files.createDirectories(storePath);
+        } catch (IOException e) {
+            throw new StorageException("Failed to create storage directory: " + storePath);
         }
 
+        // Generate a unique file name
         final String fileName = String.format("%s.%s", UUID.randomUUID().toString(), fileExtension);
+        Path assembledFilePath = storePath.resolve(fileName);
+        File assembledFile = assembledFilePath.toFile();
 
-        File assembledFile = new File(rootLocation + materialUploadFolder + "/" + fileName);
-
+        // Reassemble chunks
         try (FileOutputStream fos = new FileOutputStream(assembledFile, true)) {
             for (int i = 1; i <= totalChunks; i++) {
-                Path chunkPath = Paths.get(tempUploadDir + "/" + i);
+                Path chunkPath = Paths.get(rootLocation.toString(), tempUploadDir, String.valueOf(i));
+
+                if (!Files.exists(chunkPath)) {
+                    throw new StorageException("Chunk file not found: " + chunkPath);
+                }
+
                 byte[] chunkData = Files.readAllBytes(chunkPath);
                 fos.write(chunkData);
-                Files.delete(chunkPath); // Delete chunk after adding it to the assembled file
+                Files.delete(chunkPath); // Delete chunk after appending
             }
         } catch (IOException e) {
-            throw new StorageException("Failed to reassemble file");
+            throw new StorageException("Failed to reassemble file: " + assembledFilePath);
         }
 
         return assembledFile.getAbsolutePath();

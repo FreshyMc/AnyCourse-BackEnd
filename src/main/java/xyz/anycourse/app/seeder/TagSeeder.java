@@ -27,7 +27,7 @@ public class TagSeeder implements CommandLineRunner {
         if (tagRepository.count() == 0) {
             List<Tag> tags = Arrays.stream(MaterialTag.values()).map(tag -> {
                 Tag tagEntity = new Tag();
-                tagEntity.setName(tag.name());
+                tagEntity.setName(tag.getName());
 
                 return tagEntity;
             }).toList();

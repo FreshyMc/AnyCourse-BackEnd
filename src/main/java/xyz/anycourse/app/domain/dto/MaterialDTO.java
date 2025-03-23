@@ -10,7 +10,6 @@ public class MaterialDTO {
     private String title;
     private String description;
     private String thumbnail;
-    private String location;
     private Set<TagDTO> tags;
 
     public MaterialDTO(Material material) {
@@ -18,7 +17,6 @@ public class MaterialDTO {
         this.title = material.getTitle();
         this.description = material.getDescription();
         this.thumbnail = material.getThumbnail();
-        this.location = material.getLocation();
         this.tags = material.getTags().stream()
                 .map(TagDTO::new)
                 .collect(Collectors.toSet());
@@ -54,14 +52,6 @@ public class MaterialDTO {
 
     public void setThumbnail(String thumbnail) {
         this.thumbnail = thumbnail;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
     }
 
     public Set<TagDTO> getTags() {
