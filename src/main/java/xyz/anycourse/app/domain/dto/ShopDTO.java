@@ -15,6 +15,7 @@ public class ShopDTO {
     private String ownerUsername;
     private String ownerAvatar;
     private Boolean following;
+    private Boolean owner;
 
     public ShopDTO() {
     }
@@ -30,6 +31,7 @@ public class ShopDTO {
         this.ownerAvatar = shop.getOwner().getAvatar();
         UserPrincipal principal = UserUtil.extractUserPrincipalFromAuthentication(SecurityContextHolder.getContext().getAuthentication());
         this.following = shop.getFollowers().stream().anyMatch(follower -> follower.getId().equals(principal.getUserId()));
+        this.owner = shop.getOwner().getId().equals(principal.getUserId());
     }
 
     public String getId() {
