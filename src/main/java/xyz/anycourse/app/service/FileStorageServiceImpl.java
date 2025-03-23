@@ -153,6 +153,14 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new StorageException("Failed to reassemble file: " + assembledFilePath);
         }
 
+        Path tempDirPath = Paths.get(rootLocation.toString(), tempUploadDir);
+
+        try {
+            Files.delete(tempDirPath);
+        } catch (IOException e) {
+            throw new StorageException("Failed to delete temp upload directory: " + tempDirPath);
+        }
+
         return assembledFile.getAbsolutePath();
     }
 
