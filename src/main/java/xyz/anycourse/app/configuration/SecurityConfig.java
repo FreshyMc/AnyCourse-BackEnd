@@ -48,7 +48,7 @@ public class SecurityConfig {
         http.cors(cors -> cors.disable());
         http.csrf(customizer -> customizer.disable());
         http.authorizeHttpRequests(request -> request
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/shop/all", "/api/shop/thumbnail", "/api/user/avatar")
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/shop/**", "/api/user/avatar")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

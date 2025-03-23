@@ -105,4 +105,12 @@ public class ShopDTO {
     public void setFollowing(Boolean following) {
         this.following = following;
     }
+
+    public Boolean getOwner() {
+        return owner;
+    }
+
+    public void setOwner(Boolean owner) {
+        this.owner = owner;
+    }
 }
