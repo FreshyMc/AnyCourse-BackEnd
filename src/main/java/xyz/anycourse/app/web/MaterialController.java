@@ -2,6 +2,7 @@ package xyz.anycourse.app.web;
 
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,19 @@ public class MaterialController {
         return ResponseEntity.ok().body(new MaterialUploadSuccessDTO(materialId, chunkNumber, totalChunks));
     }
 
+    @PostMapping("/thumbnail/{id}")
+    public ResponseEntity<MaterialUploadSuccessDTO> uploadThumbnail(
+        @PathVariable(name = "id") String materialId,
+        @RequestParam("file") MultipartFile fileChunk,
+        @RequestParam("chunkNumber") int chunkNumber,
+        @RequestParam("totalChunks") int totalChunks,
+        Authentication authentication
+    ) {
+        materialService.uploadThumbnailByChunk(materialId, fileChunk, chunkNumber, totalChunks, authentication);
+
+        return ResponseEntity.ok().body(new MaterialUploadSuccessDTO(materialId, chunkNumber, totalChunks));
+    }
+
     @GetMapping("/retrieve/{id}")
     public MaterialDTO getMaterial(
         @PathVariable(name = "id") String materialId,
@@ -58,5 +72,16 @@ public class MaterialController {
         PageRequest pageable = PageRequest.of(page, size);
 
         return materialService.getAllMaterialsByShop(shopId, authentication, pageable);
+    }
+
+    @GetMapping("/thumbnail/{id}")
+    public ResponseEntity<byte[]> getThumbnail(
+        @PathVariable String id
+    ) {
+        FileDTO thumbnail = materialService.getMaterialThumbnail(id);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, thumbnail.getType())
+                .body(thumbnail.getContent());
     }
 }

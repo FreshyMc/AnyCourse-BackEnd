@@ -9,14 +9,12 @@ public class MaterialDTO {
     private String id;
     private String title;
     private String description;
-    private String thumbnail;
     private Set<TagDTO> tags;
 
     public MaterialDTO(Material material) {
         this.id = material.getId();
         this.title = material.getTitle();
         this.description = material.getDescription();
-        this.thumbnail = material.getThumbnail();
         this.tags = material.getTags().stream()
                 .map(TagDTO::new)
                 .collect(Collectors.toSet());
@@ -44,14 +42,6 @@ public class MaterialDTO {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getThumbnail() {
-        return thumbnail;
-    }
-
-    public void setThumbnail(String thumbnail) {
-        this.thumbnail = thumbnail;
     }
 
     public Set<TagDTO> getTags() {

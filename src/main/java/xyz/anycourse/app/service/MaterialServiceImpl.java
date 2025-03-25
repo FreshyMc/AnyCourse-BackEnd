@@ -24,6 +24,7 @@ import xyz.anycourse.app.service.contract.MaterialService;
 import xyz.anycourse.app.util.UserUtil;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,8 @@ public class MaterialServiceImpl implements MaterialService {
 
     private static final String MATERIAL_CHUNKS_UPLOAD_FOLDER = "/material_chunks";
     private static final String MATERIAL_UPLOAD_FOLDER = "/materials";
+    private static final String MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER = "/material_thumbnail_chunks";
+    private static final String MATERIAL_THUMBNAIL_UPLOAD_FOLDER = "/material_thumbnails";
 
     private final MaterialRepository materialRepository;
     private final UserRepository userRepository;
@@ -122,6 +125,46 @@ public class MaterialServiceImpl implements MaterialService {
                 .toList();
 
         return new PaginatedDTO<>(content, materials.getTotalPages(), materials.getTotalElements());
+    }
+
+    @Override
+    public void uploadThumbnailByChunk(
+        String materialId,
+        MultipartFile fileChunk,
+        int chunkNumber,
+        int totalChunks,
+        Authentication authentication
+    ) {
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
+
+        UserPrincipal principal = UserUtil.extractUserPrincipalFromAuthentication(authentication);
+
+        checkMaterialOwner(material, principal);
+
+        String tempUploadDir = "/tempDir-" + materialId;
+
+        fileStorageService.uploadChunk(fileChunk, chunkNumber, tempUploadDir, MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER);
+
+        if (chunkNumber == totalChunks) {
+            String fileExtension = FilenameUtils.getExtension(fileChunk.getOriginalFilename());
+
+            String filePath = fileStorageService.reassembleFile(totalChunks, MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER + tempUploadDir, fileExtension, MATERIAL_THUMBNAIL_UPLOAD_FOLDER);
+
+            material.setThumbnail(filePath);
+            materialRepository.save(material);
+        }
+    }
+
+    @Override
+    public FileDTO getMaterialThumbnail(String id) {
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Material not found."));
+
+        String thumbnail = Optional.ofNullable(material.getThumbnail())
+                .orElseThrow(() -> new ResourceNotFoundException("Thumbnail not found."));
+
+        return fileStorageService.get(thumbnail, MATERIAL_THUMBNAIL_UPLOAD_FOLDER);
     }
 
     private void checkMaterialOwner(Material material, UserPrincipal principal) {
