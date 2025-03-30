@@ -50,6 +50,7 @@ public class MaterialServiceImpl implements MaterialService {
     private static final String MATERIAL_UPLOAD_FOLDER = "/materials";
     private static final String MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER = "/material_thumbnail_chunks";
     private static final String MATERIAL_THUMBNAIL_UPLOAD_FOLDER = "/material_thumbnails";
+    private static final String MATERIAL_STREAM_SEGMENTS_URL = "/api/material/stream/segments/";
 
     private final MaterialRepository materialRepository;
     private final UserRepository userRepository;
@@ -59,6 +60,8 @@ public class MaterialServiceImpl implements MaterialService {
 
     @Value("${video.hls.output.dir}")
     private String hlsOutputDirectory;
+    @Value("${video.hls.base-url}")
+    private String hlsBaseUrl;
 
     public MaterialServiceImpl(
             MaterialRepository materialRepository,
@@ -100,7 +103,7 @@ public class MaterialServiceImpl implements MaterialService {
             int chunkNumber,
             int totalChunks,
             Authentication authentication
-    ) {
+    ) throws IOException, InterruptedException {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
 
@@ -117,7 +120,10 @@ public class MaterialServiceImpl implements MaterialService {
 
             String filePath = fileStorageService.reassembleFile(totalChunks, MATERIAL_CHUNKS_UPLOAD_FOLDER + tempUploadDir, fileExtension, MATERIAL_UPLOAD_FOLDER);
 
+            String hlsPath = convertToHLS(filePath);
+
             material.setLocation(filePath);
+            material.setHlsPath(hlsPath);
             materialRepository.save(material);
         }
     }
@@ -152,7 +158,7 @@ public class MaterialServiceImpl implements MaterialService {
         int chunkNumber,
         int totalChunks,
         Authentication authentication
-    ) throws IOException, InterruptedException {
+    ) {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
 
@@ -169,10 +175,7 @@ public class MaterialServiceImpl implements MaterialService {
 
             String filePath = fileStorageService.reassembleFile(totalChunks, MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER + tempUploadDir, fileExtension, MATERIAL_THUMBNAIL_UPLOAD_FOLDER);
 
-            String hlsPath = convertToHLS(filePath);
-
             material.setThumbnail(filePath);
-            material.setHlsPath(hlsPath);
             materialRepository.save(material);
         }
     }
@@ -194,6 +197,22 @@ public class MaterialServiceImpl implements MaterialService {
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found."));
 
         Path filePath = Paths.get(material.getHlsPath()).normalize();
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                throw new ResourceNotFoundException("Material stream not found");
+            }
+
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new MaterialException("Material stream not found");
+        }
+    }
+
+    @Override
+    public Resource serveFile(String fileName) {
+        Path filePath = Paths.get(hlsOutputDirectory).resolve(fileName).normalize();
         try {
             Resource resource = new UrlResource(filePath.toUri());
 
@@ -239,15 +258,17 @@ public class MaterialServiceImpl implements MaterialService {
         String outputFileName = videoFile.getName().substring(0, videoFile.getName().lastIndexOf(".")).concat(".m3u8");
         String outputFilePath = outputDir.getAbsolutePath() + File.separator + outputFileName;
 
+        String segmentBaseUrl = hlsBaseUrl.concat(MATERIAL_STREAM_SEGMENTS_URL);
+
         List<String> command = List.of(
             "ffmpeg",
             "-i", videoFile.getAbsolutePath(),  // Input video
-            "-codec:", "copy",                 // Keep the original codec
-            "-start_number", "0",               // Start segment numbering from 0
-            "-hls_time", "10",                  // Each segment is 10 seconds long
-            "-hls_list_size", "0",              // Keep all segments
-            "-f", "hls",                         // Output format
-            outputFilePath                       // Output file
+            "-c", "copy",
+            "-hls_time", "10",
+            "-hls_list_size", "0",
+            "-hls_base_url", segmentBaseUrl,
+            "-f", "hls",
+            outputFilePath
         );
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);

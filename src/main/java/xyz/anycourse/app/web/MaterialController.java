@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class MaterialController {
         @RequestParam("chunkNumber") int chunkNumber,
         @RequestParam("totalChunks") int totalChunks,
         Authentication authentication
-    ) {
+    ) throws IOException, InterruptedException {
         materialService.uploadMaterialByChunk(materialId, fileChunk, chunkNumber, totalChunks, authentication);
 
         return ResponseEntity.ok().body(new MaterialUploadSuccessDTO(materialId, chunkNumber, totalChunks));
@@ -51,7 +52,7 @@ public class MaterialController {
         @RequestParam("chunkNumber") int chunkNumber,
         @RequestParam("totalChunks") int totalChunks,
         Authentication authentication
-    ) throws IOException, InterruptedException {
+    ) {
         materialService.uploadThumbnailByChunk(materialId, fileChunk, chunkNumber, totalChunks, authentication);
 
         return ResponseEntity.ok().body(new MaterialUploadSuccessDTO(materialId, chunkNumber, totalChunks));
@@ -98,5 +99,28 @@ public class MaterialController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
                 .body(resource);
+    }
+
+    @GetMapping("/stream/segments/{fileName}")
+    @CrossOrigin(origins = "*")
+    public ResponseEntity<Resource> getSegment(
+        @PathVariable(name = "fileName") String fileName,
+        Authentication authentication
+    ) {
+        Resource resource = materialService.serveFile(fileName);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "video/mp2t")
+                .body(resource);
+    }
+
+    @RequestMapping(value = "/stream/segments/{fileName}", method = RequestMethod.OPTIONS)
+    @CrossOrigin(origins = "*", allowedHeaders = "Authorization")
+    public ResponseEntity<Void> handleOptions() {
+        return ResponseEntity
+                .ok()
+                .allow(HttpMethod.GET, HttpMethod.OPTIONS)
+                .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "Authorization, Content-Type")
+                .build();
     }
 }

@@ -2,6 +2,7 @@ package xyz.anycourse.app.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -48,7 +49,8 @@ public class SecurityConfig {
         http.cors(cors -> cors.disable());
         http.csrf(customizer -> customizer.disable());
         http.authorizeHttpRequests(request -> request
-                .requestMatchers("/api/auth/**", "/api/shop/**", "/api/user/avatar")
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/shop/**", "/api/user/avatar", "/api/material/stream/segments/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
