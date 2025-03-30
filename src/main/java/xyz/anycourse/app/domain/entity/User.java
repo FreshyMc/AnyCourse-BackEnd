@@ -22,7 +22,7 @@ public class User extends Base {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<Role> roles = new ArrayList<>();
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "followers")
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "followers")
     private Set<Shop> shops = new HashSet<>();
     private boolean banned = false;
 

@@ -10,6 +10,7 @@ public class MaterialDTO {
     private String title;
     private String description;
     private Set<TagDTO> tags;
+    private ShopDTO shop;
 
     public MaterialDTO(Material material) {
         this.id = material.getId();
@@ -18,6 +19,7 @@ public class MaterialDTO {
         this.tags = material.getTags().stream()
                 .map(TagDTO::new)
                 .collect(Collectors.toSet());
+        this.shop = new ShopDTO(material.getShop());
     }
 
     public String getId() {
@@ -50,5 +52,13 @@ public class MaterialDTO {
 
     public void setTags(Set<TagDTO> tags) {
         this.tags = tags;
+    }
+
+    public ShopDTO getShop() {
+        return shop;
+    }
+
+    public void setShop(ShopDTO shop) {
+        this.shop = shop;
     }
 }

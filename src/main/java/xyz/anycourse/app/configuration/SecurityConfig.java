@@ -50,7 +50,7 @@ public class SecurityConfig {
         http.csrf(customizer -> customizer.disable());
         http.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**", "/api/shop/**", "/api/user/avatar", "/api/material/stream/segments/**")
+                .requestMatchers("/api/auth/**", "/api/shop/**", "/api/user/avatar", "/api/material/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
