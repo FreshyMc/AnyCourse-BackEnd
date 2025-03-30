@@ -1,6 +1,11 @@
 package xyz.anycourse.app.service;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -15,6 +20,7 @@ import xyz.anycourse.app.domain.entity.Tag;
 import xyz.anycourse.app.domain.entity.User;
 import xyz.anycourse.app.domain.enumeration.MaterialTag;
 import xyz.anycourse.app.exception.ForbiddenActionException;
+import xyz.anycourse.app.exception.MaterialException;
 import xyz.anycourse.app.exception.ResourceNotFoundException;
 import xyz.anycourse.app.repository.MaterialRepository;
 import xyz.anycourse.app.repository.ShopRepository;
@@ -23,6 +29,13 @@ import xyz.anycourse.app.repository.UserRepository;
 import xyz.anycourse.app.service.contract.MaterialService;
 import xyz.anycourse.app.util.UserUtil;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +43,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class MaterialServiceImpl implements MaterialService {
+
+    private static Logger log = LoggerFactory.getLogger(MaterialServiceImpl.class);
 
     private static final String MATERIAL_CHUNKS_UPLOAD_FOLDER = "/material_chunks";
     private static final String MATERIAL_UPLOAD_FOLDER = "/materials";
@@ -41,6 +56,9 @@ public class MaterialServiceImpl implements MaterialService {
     private final ShopRepository shopRepository;
     private final TagRepository tagRepository;
     private final FileStorageServiceImpl fileStorageService;
+
+    @Value("${video.hls.output.dir}")
+    private String hlsOutputDirectory;
 
     public MaterialServiceImpl(
             MaterialRepository materialRepository,
@@ -134,7 +152,7 @@ public class MaterialServiceImpl implements MaterialService {
         int chunkNumber,
         int totalChunks,
         Authentication authentication
-    ) {
+    ) throws IOException, InterruptedException {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
 
@@ -151,7 +169,10 @@ public class MaterialServiceImpl implements MaterialService {
 
             String filePath = fileStorageService.reassembleFile(totalChunks, MATERIAL_THUMBNAIL_CHUNKS_UPLOAD_FOLDER + tempUploadDir, fileExtension, MATERIAL_THUMBNAIL_UPLOAD_FOLDER);
 
+            String hlsPath = convertToHLS(filePath);
+
             material.setThumbnail(filePath);
+            material.setHlsPath(hlsPath);
             materialRepository.save(material);
         }
     }
@@ -165,6 +186,25 @@ public class MaterialServiceImpl implements MaterialService {
                 .orElseThrow(() -> new ResourceNotFoundException("Thumbnail not found."));
 
         return fileStorageService.get(thumbnail, MATERIAL_THUMBNAIL_UPLOAD_FOLDER);
+    }
+
+    @Override
+    public Resource getMaterialStream(String materialId, Authentication authentication) {
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Material not found."));
+
+        Path filePath = Paths.get(material.getHlsPath()).normalize();
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                throw new ResourceNotFoundException("Material stream not found");
+            }
+
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new MaterialException("Material stream not found");
+        }
     }
 
     private void checkMaterialOwner(Material material, UserPrincipal principal) {
@@ -188,5 +228,45 @@ public class MaterialServiceImpl implements MaterialService {
 
             tags.forEach(tag -> material.addTag(tag));
         }
+    }
+
+    private String convertToHLS(String filePath) throws IOException, InterruptedException {
+        File outputDir = new File(hlsOutputDirectory);
+        if (!outputDir.exists()) outputDir.mkdirs();
+
+        File videoFile = new File(filePath);
+
+        String outputFileName = videoFile.getName().substring(0, videoFile.getName().lastIndexOf(".")).concat(".m3u8");
+        String outputFilePath = outputDir.getAbsolutePath() + File.separator + outputFileName;
+
+        List<String> command = List.of(
+            "ffmpeg",
+            "-i", videoFile.getAbsolutePath(),  // Input video
+            "-codec:", "copy",                 // Keep the original codec
+            "-start_number", "0",               // Start segment numbering from 0
+            "-hls_time", "10",                  // Each segment is 10 seconds long
+            "-hls_list_size", "0",              // Keep all segments
+            "-f", "hls",                         // Output format
+            outputFilePath                       // Output file
+        );
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                log.info(line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            log.error("Process terminated with exit code " + exitCode);
+            throw new MaterialException("Error occurred during material processing");
+        }
+
+        return outputFilePath;
     }
 }

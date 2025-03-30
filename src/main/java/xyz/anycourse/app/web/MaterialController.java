@@ -1,6 +1,7 @@
 package xyz.anycourse.app.web;
 
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.anycourse.app.domain.dto.*;
 import xyz.anycourse.app.service.contract.MaterialService;
+
+import java.io.IOException;
 
 @RequestMapping("/api/material")
 @RestController
@@ -48,7 +51,7 @@ public class MaterialController {
         @RequestParam("chunkNumber") int chunkNumber,
         @RequestParam("totalChunks") int totalChunks,
         Authentication authentication
-    ) {
+    ) throws IOException, InterruptedException {
         materialService.uploadThumbnailByChunk(materialId, fileChunk, chunkNumber, totalChunks, authentication);
 
         return ResponseEntity.ok().body(new MaterialUploadSuccessDTO(materialId, chunkNumber, totalChunks));
@@ -83,5 +86,17 @@ public class MaterialController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, thumbnail.getType())
                 .body(thumbnail.getContent());
+    }
+
+    @GetMapping("/stream/{id}")
+    public ResponseEntity<Resource> getStream(
+        @PathVariable(name = "id") String materialId,
+        Authentication authentication
+    ) {
+        Resource resource = materialService.getMaterialStream(materialId, authentication);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
+                .body(resource);
     }
 }

@@ -13,6 +13,7 @@ public class Material extends Base {
     private String thumbnail;
     private String location;
     private String previewLocation;
+    private String hlsPath;
     @ManyToMany
     @JoinTable(
         name = "material_tags",
@@ -91,5 +92,13 @@ public class Material extends Base {
     public void removeTag(Tag tag) {
         this.tags.remove(tag);
         tag.getMaterials().remove(this);
+    }
+
+    public String getHlsPath() {
+        return hlsPath;
+    }
+
+    public void setHlsPath(String hlsPath) {
+        this.hlsPath = hlsPath;
     }
 }

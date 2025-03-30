@@ -7,6 +7,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import xyz.anycourse.app.domain.dto.TokenValidationDTO;
 import xyz.anycourse.app.domain.dto.UserLoginDTO;
 import xyz.anycourse.app.service.contract.JwtService;
 
@@ -47,6 +48,17 @@ public class JwtServiceImpl implements JwtService {
         final String email = extractSubject(token);
 
         return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+
+    @Override
+    public boolean isTokenExpired(TokenValidationDTO tokenValidationDTO) {
+        final String token = tokenValidationDTO.getToken();
+
+        try {
+            return isTokenExpired(token);
+        } catch (Exception ex) {
+            return true;
+        }
     }
 
     private SecretKeySpec getSigningKey() {

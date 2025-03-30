@@ -1,6 +1,7 @@
 package xyz.anycourse.app.service.contract;
 
 import org.springframework.security.core.userdetails.UserDetails;
+import xyz.anycourse.app.domain.dto.TokenValidationDTO;
 import xyz.anycourse.app.domain.dto.UserLoginDTO;
 
 public interface JwtService {
@@ -9,4 +10,6 @@ public interface JwtService {
     String extractSubject(String token);
 
     boolean validateToken(String token, UserDetails userDetails);
+
+    boolean isTokenExpired(TokenValidationDTO tokenValidationDTO);
 }

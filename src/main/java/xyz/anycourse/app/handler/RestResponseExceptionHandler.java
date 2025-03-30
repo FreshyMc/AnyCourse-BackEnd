@@ -11,10 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import xyz.anycourse.app.exception.ForbiddenActionException;
-import xyz.anycourse.app.exception.StorageException;
-import xyz.anycourse.app.exception.UnknownRoleException;
-import xyz.anycourse.app.exception.UserAlreadyExistsException;
+import xyz.anycourse.app.exception.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,6 +49,20 @@ public class RestResponseExceptionHandler extends ResponseEntityExceptionHandler
 
     @ExceptionHandler(value = ForbiddenActionException.class)
     public ResponseEntity<Object> handleForbiddenActionException(ForbiddenActionException ex, WebRequest request) {
+        Map<String, Object> response = mapError(ex);
+
+        return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = MaterialException.class)
+    public ResponseEntity<Object> handleMaterialException(MaterialException ex, WebRequest request) {
+        Map<String, Object> response = mapError(ex);
+
+        return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = ResourceNotFoundException.class)
+    public ResponseEntity<Object> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
         Map<String, Object> response = mapError(ex);
 
         return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.BAD_REQUEST);
