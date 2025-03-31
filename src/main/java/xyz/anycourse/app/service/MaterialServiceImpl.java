@@ -226,6 +226,24 @@ public class MaterialServiceImpl implements MaterialService {
         }
     }
 
+    @Override
+    public PaginatedDTO<MaterialDTO> getRelatedMaterials(
+        String materialId,
+        Authentication authentication,
+        Pageable pageable
+    ) {
+        Material originMaterial = materialRepository.findById(materialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Material not found"));
+
+        Page<Material> relatedMaterials = materialRepository.findRelatedMaterialsByShop(originMaterial.getShop().getId(), materialId, pageable);
+
+        List<MaterialDTO> content = relatedMaterials.getContent().stream()
+                .map(MaterialDTO::new)
+                .toList();
+
+        return new PaginatedDTO<>(content, relatedMaterials.getTotalPages(), relatedMaterials.getTotalElements());
+    }
+
     private void checkMaterialOwner(Material material, UserPrincipal principal) {
         if (!material.getShop().getOwner().getId().equals(principal.getUserId())) {
             throw new ForbiddenActionException("Not authorized to upload material");

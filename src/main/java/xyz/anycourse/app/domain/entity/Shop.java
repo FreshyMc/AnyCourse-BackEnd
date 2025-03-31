@@ -11,6 +11,7 @@ import java.util.Set;
 @Entity
 public class Shop extends Base {
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String thumbnail;
     @ManyToOne

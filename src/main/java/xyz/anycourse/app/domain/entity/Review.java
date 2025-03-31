@@ -1,5 +1,6 @@
 package xyz.anycourse.app.domain.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -7,6 +8,7 @@ import jakarta.persistence.Table;
 @Table(name = "reviews")
 @Entity
 public class Review extends Base {
+    @Column(columnDefinition = "TEXT")
     private String content;
     private Integer rating;
     @ManyToOne

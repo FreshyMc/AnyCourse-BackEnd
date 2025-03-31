@@ -9,6 +9,7 @@ import java.util.Set;
 @Entity
 public class Material extends Base {
     private String title;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String thumbnail;
     private String location;

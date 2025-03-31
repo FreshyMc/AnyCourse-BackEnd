@@ -3,6 +3,7 @@ package xyz.anycourse.app.web;
 import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -122,5 +123,17 @@ public class MaterialController {
                 .allow(HttpMethod.GET, HttpMethod.OPTIONS)
                 .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "Authorization, Content-Type")
                 .build();
+    }
+
+    @GetMapping("/related")
+    public PaginatedDTO<MaterialDTO> getRelatedMaterials(
+        @RequestParam(name = "related_to") String materialId,
+        @RequestParam(name = "page", required = false, defaultValue = "0") Integer page,
+        @RequestParam(name = "size", required = false, defaultValue = "15") Integer size,
+        Authentication authentication
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        return materialService.getRelatedMaterials(materialId, authentication, pageable);
     }
 }

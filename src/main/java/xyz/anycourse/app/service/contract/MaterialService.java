@@ -24,4 +24,6 @@ public interface MaterialService {
     Resource getMaterialStream(String materialId, Authentication authentication);
 
     Resource serveFile(String fileName);
+
+    PaginatedDTO<MaterialDTO> getRelatedMaterials(String materialId, Authentication authentication, Pageable pageable);
 }
